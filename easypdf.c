@@ -1,13 +1,9 @@
 #include "easypdf.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
-PDFResult NOT_IMPLEMENTED = {
-  .error = true,
-  .message = "Not implemented",
-};
 
 PDFResult OK_RESULT = {
   .error = false,
@@ -36,7 +32,8 @@ PDFObject* easypdf_ref(PDFObjectId id)
 {
   PDFObject* object = (PDFObject*)Allocator(sizeof(PDFObject));
   object->type      = PDFTypeObjectReference;
-  object->u._ref     = id;
+  object->u._ref    = id;
+  object->next      = NULL; 
 
   return object;
 }
@@ -45,7 +42,8 @@ PDFObject* easypdf_name(PDFString val)
 {
   PDFObject* object = (PDFObject*)Allocator(sizeof(PDFObject));
   object->type      = PDFTypeName;
-  object->u._str     = val;
+  object->u._str    = val;
+  object->next      = NULL; 
 
   return object;
 }
@@ -54,7 +52,8 @@ PDFObject* easypdf_int(PDFInt val)
 {
   PDFObject* object = (PDFObject*)Allocator(sizeof(PDFObject));
   object->type      = PDFTypeInt;
-  object->u._int     = val;
+  object->u._int    = val;
+  object->next      = NULL; 
 
   return object;
 }
@@ -63,7 +62,19 @@ PDFObject* easypdf_str(PDFString val)
 {
   PDFObject* object = (PDFObject*)Allocator(sizeof(PDFObject));
   object->type      = PDFTypeString;
-  object->u._str     = val;
+  object->u._str    = val;
+  object->next      = NULL; 
+
+  return object;
+}
+
+PDFObject* easypdf_stream(char *data, size_t size)
+{
+  PDFObject* object = (PDFObject*)Allocator(sizeof(PDFObject));
+  object->type      = PDFTypeStream;
+  object->length    = size;
+  object->u._str    = data;
+  object->next      = NULL; 
 
   return object;
 }
@@ -136,8 +147,8 @@ void easypdf_init(PDFDocument* document)
   easypdf_addobject(document, font);
   easypdf_dict_add(font, "Type", easypdf_name("Font"));
   easypdf_dict_add(font, "Subtype", easypdf_name("Type1"));
-  easypdf_dict_add(font, "Name", easypdf_name("F1"));
-  easypdf_dict_add(font, "BaseFont", easypdf_name("Halvetica"));
+  easypdf_dict_add(font, "Name", easypdf_name("F0"));
+  easypdf_dict_add(font, "BaseFont", easypdf_name("Helvetica"));
   
   // Adding document resources
   PDFObject* res = easypdf_dict();
@@ -156,6 +167,15 @@ void easypdf_init(PDFDocument* document)
   easypdf_addobject(document, page_tree);
   easypdf_dict_add(page_tree, "Type", easypdf_name("Pages"));
 
+  PDFString data = "BT\n"
+    "/F0 24 Tf\n"
+    "1 0 0 1 260 600 Tm\n"
+    "(Hello, World) Tj\n"
+    "ET";
+
+  PDFObject* contents = easypdf_stream(data, strlen(data));
+  easypdf_addobject(document, contents);
+
   // Adding the first page
   PDFObject* page = easypdf_dict();
   easypdf_addobject(document, page);
@@ -169,8 +189,7 @@ void easypdf_init(PDFDocument* document)
   
   easypdf_dict_add(page, "MediaBox", mediabox);
   easypdf_dict_add(page, "Resources", easypdf_ref(res->id));
-  // easypdf_dict_add(page, "Contents", easypdf_str(""));
-
+  easypdf_dict_add(page, "Contents", easypdf_ref(contents->id));
 
   PDFObject* kids = easypdf_array();
   easypdf_array_add(kids , easypdf_ref(page->id));
@@ -234,8 +253,20 @@ int easypdf_write_obj(PDFObject* object, FILE* stream)
       }
     break;
 
+  case PDFTypeStream:
+      {
+        written += fprintf(stream, "<<\n");
+        written += fprintf(stream, " /Length %ld\n", object->length);
+        written += fprintf(stream, ">>\n");
+        written += fprintf(stream, "stream\n");
+        written += fprintf(stream, "%s",object->u._str);
+        written += fprintf(stream, "\nendstream");
+      }
+    break;
+
 
     default:
+      assert(false && "Unreachabled");
       break;
   }
 
@@ -248,8 +279,8 @@ void easypdf_write(PDFDocument* document, FILE* stream)
   int* offsets = (int*)Allocator(sizeof(int)*document->object_count+1);
   
   // PDF Header
-  written += fprintf(stream, "%%PDF-1.4\n");
-  written += fprintf(stream, "%%%%EOF\n");
+  written += fprintf(stream, "%%PDF-1.6\n");
+  written += fprintf(stream, "%%âãÏÓ\n");
 
   // PDF Body ie. Definitions of indirect objects
   PDFObject* object = document->root;
@@ -258,7 +289,7 @@ void easypdf_write(PDFDocument* document, FILE* stream)
     offsets[object->id] = written;
     written += fprintf(stream, "%ld 0 obj\n", object->id);
     written += easypdf_write_obj(object, stream);
-    written += fprintf(stream, "\nendobj\n");
+    written += fprintf(stream, "\nendobj\n\n");
 
     object = object->next;    
   }
@@ -268,11 +299,12 @@ void easypdf_write(PDFDocument* document, FILE* stream)
   // Adding cross reference table
   written += fprintf(stream, "xref\n");
   written += fprintf(stream, "0 %ld\n", document->object_count+1);
-    written += fprintf(stream, "%010d 65535 f\n", 0);
+  written += fprintf(stream, "%010d 65535 f\n", 0);
   for (size_t i=1; i<document->object_count+1; i++) {
     written += fprintf(stream, "%010d 00000 n\n", offsets[i]);
   }
   free(offsets);
+
 
   // Adding Trailer
   PDFObject* trailer = easypdf_dict();
@@ -282,8 +314,16 @@ void easypdf_write(PDFDocument* document, FILE* stream)
   written += fprintf(stream, "trailer\n");
   written += easypdf_write_obj(trailer, stream);
 
+  free(trailer);
+
   written += fprintf(stream, "startxref\n%ld\n", xref_offset);
   written += fprintf(stream, "%%%%EOF\n");
   
   fprintf(stderr,"[INFO] Written %d\n", written);
+}
+
+void easypdf_delete(PDFDocument* document)
+{
+  (void)document;
+  // assert(false && "Not implemented");
 }

@@ -10,5 +10,7 @@ int main()
 
   easypdf_write(&document, stdout);
   
+  easypdf_delete(&document);
+  
   return 0;
 }

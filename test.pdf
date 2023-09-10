@@ -1,19 +1,21 @@
-%PDF-1.4
-%%EOF
+%PDF-1.6
+%âãÏÓ
 1 0 obj
 <<
  /Type /Catalog
  /Pages 4 0 R
 >>
 endobj
+
 2 0 obj
 <<
  /Type /Font
  /Subtype /Type1
- /Name /F1
- /BaseFont /Halvetica
+ /Name /F0
+ /BaseFont /Helvetica
 >>
 endobj
+
 3 0 obj
 <<
  /ProcSet [ /PDF /Text ]
@@ -22,32 +24,50 @@ endobj
 >>
 >>
 endobj
+
 4 0 obj
 <<
  /Type /Pages
- /Kids [ 5 0 R ]
+ /Kids [ 6 0 R ]
  /Count 1
 >>
 endobj
+
 5 0 obj
+<<
+ /Length 52
+>>
+stream
+BT
+/F0 24 Tf
+1 0 0 1 260 600 Tm
+(Hello, World) Tj
+ET
+endstream
+endobj
+
+6 0 obj
 <<
  /Type /Page
  /MediaBox [ 0 0 612 792 ]
  /Resources 3 0 R
+ /Contents 5 0 R
 >>
 endobj
+
 xref
-0 6
+0 7
 0000000000 65535 f
-0000000015 00000 n
-0000000066 00000 n
-0000000150 00000 n
-0000000220 00000 n
-0000000282 00000 n
+0000000019 00000 n
+0000000071 00000 n
+0000000156 00000 n
+0000000227 00000 n
+0000000290 00000 n
+0000000394 00000 n
 trailer
 <<
- /Size 6
+ /Size 7
  /Root 1 0 R
 >>startxref
-361
+491
 %%EOF

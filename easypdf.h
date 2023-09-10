@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #define Allocator malloc
 
@@ -24,19 +25,20 @@ typedef enum
 
 typedef struct PDFObject PDFObject;
 
-typedef bool PDFBool;
-typedef int PDFInt;
-typedef double PDFReal;
-typedef char* PDFString;
-typedef size_t PDFObjectId;
+typedef bool     PDFBool;
+typedef int      PDFInt;
+typedef double   PDFReal;
+typedef char*    PDFString;
+typedef size_t   PDFObjectId;
 
 typedef struct PDFObject PDFObject;
 typedef struct PDFObject
 {
   PDFObjectId   id;
   PDFObjectType type;
-  PDFString     name;
-
+  PDFString     name;   // Set incase of dictionary entry
+  size_t        length; // Set incase of stream object
+  
   union
   {
     PDFBool        _bool;
@@ -73,5 +75,7 @@ void easypdf_init(PDFDocument* document);
   stream
 */
 void easypdf_write(PDFDocument* document, FILE* stream);
+
+void easypdf_delete(PDFDocument* document);
 
 #endif // EASYPDF
