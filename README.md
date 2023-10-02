@@ -2,17 +2,7 @@
 
 > Diclaimer: Work in progress
 
-EasyPDF is a library for generating pdf
-documents from simple xml templates
-
-Template can be
-```
-<xml>
-  <page>
-    <text>Hello World</text>
-  </page>
-</xml>
-```
+EasyPDF is a library for generating pdf with a simple API
 
 ## Goals
 - Generating files from a simple template

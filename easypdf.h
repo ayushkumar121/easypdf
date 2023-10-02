@@ -1,13 +1,12 @@
 #ifndef EASYPDF_H
 #define EASYPDF_H
 
+#include "arena.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <sys/types.h>
-
-#define Allocator malloc
 
 typedef enum 
 {
@@ -29,9 +28,9 @@ typedef bool     PDFBool;
 typedef int      PDFInt;
 typedef double   PDFReal;
 typedef char*    PDFString;
+typedef uint8_t* PDFStream;
 typedef size_t   PDFObjectId;
 
-typedef struct PDFObject PDFObject;
 typedef struct PDFObject
 {
   PDFObjectId   id;
@@ -45,6 +44,7 @@ typedef struct PDFObject
     PDFInt         _int;
     PDFReal        _real;
     PDFString      _str;
+    PDFStream      _buf;
     PDFObject*     _node;
     PDFObjectId    _ref;
   } u;
@@ -53,27 +53,36 @@ typedef struct PDFObject
   
 } PDFObject;
 
-
 typedef struct
 {
-  size_t object_count;
-  PDFObject* root;
+  /* Tree of all the objects in the pdf*/
+  PDFObject*  root;
+  size_t      object_count;
+
+  /* Array of all the page references in the document*/
+  PDFObject** pages;
+  size_t      page_count;
+
+  size_t      font_size;
+  PDFObject*  resources;
+  
+  /* Arena used for all the allocations for the pdf */
+  Arena* arena;
 } PDFDocument;
 
-
 typedef struct
 {
-  bool error;
+  bool  error;
   char* message;
 } PDFResult;
 
-/*Takes in the PDF documents and initialises it*/
 void easypdf_init(PDFDocument* document);
 
-/*
-  Takes the PDF document renders write the final document to 
-  stream
-*/
+void easypdf_addpage(PDFDocument* document);
+
+void easypdf_text(PDFDocument* document, 
+		  char* text, int x, int y);
+
 void easypdf_write(PDFDocument* document, FILE* stream);
 
 void easypdf_delete(PDFDocument* document);
