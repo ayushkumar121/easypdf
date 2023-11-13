@@ -1,4 +1,4 @@
-# EasyPDF
+# [WIP] EasyPDF
 
 > Diclaimer: Work in progress
 
